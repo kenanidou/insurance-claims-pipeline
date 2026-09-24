@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Insurance Claims Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --card: #21253a;
+      --border: #2e3354;
+      --accent: #6c8ef5;
+      --accent2: #5dd6b5;
+      --accent3: #f5a623;
+      --accent4: #e05c5c;
+      --text: #e8eaf6;
+      --muted: #8891b4;
+      --green: #4caf8c;
+      --red: #e05c5c;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    header h1 span { color: var(--accent); }
+    .badge {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    /* ── KPI Cards ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .kpi {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+    }
+    .kpi-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .kpi-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .kpi.accent1 .kpi-value { color: var(--accent); }
+    .kpi.accent2 .kpi-value { color: var(--accent2); }
+    .kpi.accent3 .kpi-value { color: var(--accent3); }
+    .kpi.accent4 .kpi-value { color: var(--green); }
+
+    /* ── Chart Grid ── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .span2 { grid-column: span 2; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+    }
+    .card-title {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+    .card-heading {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .chart-wrap {
+      position: relative;
+    }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th {
+      text-align: left;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(46,51,84,0.5);
+      color: var(--text);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(108,142,245,0.06); }
+
+    .rank-badge {
+      display: inline-block;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--border);
+      color: var(--muted);
+      text-align: center;
+      line-height: 26px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .rank-badge.gold   { background: #f5a62340; color: #f5a623; }
+    .rank-badge.silver { background: #8891b440; color: #c0c8e8; }
+    .rank-badge.bronze { background: #c8784040; color: #c87840; }
+
+    .pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .pill.approved  { background: #4caf8c25; color: #4caf8c; }
+    .pill.rejected  { background: #e05c5c25; color: #e05c5c; }
+    .pill.pending   { background: #f5a62325; color: #f5a623; }
+
+    .pill.low      { background: #4caf8c20; color: #4caf8c; }
+    .pill.medium   { background: #f5a62320; color: #f5a623; }
+    .pill.high     { background: #e8864020; color: #e88640; }
+    .pill.critical { background: #e05c5c20; color: #e05c5c; }
+
+    /* ── Risk Tier mini stats ── */
+    .tier-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(46,51,84,0.5);
+    }
+    .tier-row:last-child { border-bottom: none; }
+    .tier-bar-wrap { flex: 1; }
+    .tier-bar-bg {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .tier-bar-fill { height: 100%; border-radius: 4px; }
+    .tier-name { width: 80px; font-size: 0.82rem; }
+    .tier-stats { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    @media (max-width: 900px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .span2 { grid-column: span 1; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div>
+    <h1>Insurance Claims <span>Dashboard</span></h1>
+    <div style="font-size:0.8rem; color:var(--muted); margin-top:4px;">
+      196 αξιώσεις · 2022–2024 · SQLite Star Schema
+    </div>
+  </div>
+  <div class="badge">📊 End-to-End Data Pipeline · Portfolio Project</div>
+</header>
+
+<!-- ── KPIs ── -->
+<div class="kpi-grid">
+  <div class="kpi accent1">
+    <div class="kpi-label">Συνολική Έκθεση</div>
+    <div class="kpi-value">€4.34M</div>
+    <div class="kpi-sub">Αθροιστικό ποσό αξιώσεων 2022–2024</div>
+  </div>
+  <div class="kpi accent2">
+    <div class="kpi-label">Συνολικές Αξιώσεις</div>
+    <div class="kpi-value">196</div>
+    <div class="kpi-sub">5 τύποι ασφαλιστηρίων · 9 περιφέρειες</div>
+  </div>
+  <div class="kpi accent3">
+    <div class="kpi-label">Μέσο Ποσό Αξίωσης</div>
+    <div class="kpi-value">€22.1K</div>
+    <div class="kpi-sub">LIFE avg: €89,140 · AUTO avg: €8,562</div>
+  </div>
+  <div class="kpi accent4">
+    <div class="kpi-label">Ποσοστό Έγκρισης</div>
+    <div class="kpi-value">57.1%</div>
+    <div class="kpi-sub">112 εγκεκριμένες από τις 196 αξιώσεις</div>
+  </div>
+</div>
+
+<!-- ── Row 1: Exposure + Approval ── -->
+<div class="grid-2">
+
+  <div class="card">
+    <div class="card-title">Q1 · Ανάλυση Έκθεσης</div>
+    <div class="card-heading">Συνολική Έκθεση ανά Τύπο Ασφαλιστηρίου</div>
+    <div class="chart-wrap"><canvas id="chartExposure" height="220"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Q2 · Ποσοστό Έγκρισης</div>
+    <div class="card-heading">Approval Rate ανά Τύπο Ασφαλιστηρίου</div>
+    <div class="chart-wrap"><canvas id="chartApproval" height="220"></canvas></div>
+  </div>
+
+</div>
+
+<!-- ── Row 2: Risk Tier + Top 10 ── -->
+<div class="grid-3" style="grid-template-columns: 1fr 2fr;">
+
+  <div class="card">
+    <div class="card-title">Q3 · Risk Tier Analysis</div>
+    <div class="card-heading">Κατανομή Κινδύνου</div>
+
+    <div id="tierRows"></div>
+
+    <div style="margin-top:20px;">
+      <div class="card-title" style="margin-bottom:10px;">Avg Settlement % ανά Tier</div>
+      <canvas id="chartRisk" height="150"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Q4 · Window Function — Ranking</div>
+    <div class="card-heading">Top 10 Μεγαλύτερες Αξιώσεις</div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Claim ID</th>
+          <th>Τύπος</th>
+          <th>Περιφέρεια</th>
+          <th style="text-align:right">Ποσό (€)</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="top10Body"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ── Row 3: Running Total ── -->
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-title">Q5 · Window Function — Running Total</div>
+  <div class="card-heading">Μηνιαίες Αξιώσεις & Αθροιστικό Σύνολο (2022–2024)</div>
+  <div class="chart-wrap"><canvas id="chartTimeline" height="120"></canvas></div>
+</div>
+
+<footer>
+  Built with Python · pandas · SQLAlchemy · SQLite · Chart.js &nbsp;|&nbsp;
+  End-to-End Data Engineering Pipeline · Loukia Constantinou
+</footer>
+
+<script>
+// ── Data ───────────────────────────────────────────────
+const q1 = [
+  {policy_type:"LIFE",      total_claims:22, avg_claim:89140,  total_exposure:1961074},
+  {policy_type:"PROPERTY",  total_claims:38, avg_claim:23553,  total_exposure:895030},
+  {policy_type:"HEALTH",    total_claims:50, avg_claim:14373,  total_exposure:718670},
+  {policy_type:"AUTO",      total_claims:78, avg_claim:8562,   total_exposure:667804},
+  {policy_type:"LIABILITY", total_claims:8,  avg_claim:12008,  total_exposure:96067}
+];
+
+const q2 = [
+  {policy_type:"LIFE",      approval_rate_pct:72.7},
+  {policy_type:"PROPERTY",  approval_rate_pct:57.9},
+  {policy_type:"AUTO",      approval_rate_pct:55.1},
+  {policy_type:"HEALTH",    approval_rate_pct:54.0},
+  {policy_type:"LIABILITY", approval_rate_pct:50.0}
+];
+
+const q3 = [
+  {risk_tier:"LOW",    claims:11, avg_amount:3275,  avg_settlement_pct:72.8},
+  {risk_tier:"MEDIUM", claims:86, avg_amount:15659, avg_settlement_pct:74.7},
+  {risk_tier:"HIGH",   claims:15, avg_amount:97484, avg_settlement_pct:76.9}
+];
+
+const q4 = [
+  {rank:1,  claim_id:"CLM0165", policy_type:"LIFE", region:"Δωδεκάνησα",    claim_amount:142432.4,  status:"APPROVED"},
+  {rank:2,  claim_id:"CLM0180", policy_type:"LIFE", region:"Αττική",        claim_amount:141991.4,  status:"APPROVED"},
+  {rank:3,  claim_id:"CLM0091", policy_type:"LIFE", region:"Αττική",        claim_amount:131336.14, status:"APPROVED"},
+  {rank:4,  claim_id:"CLM0043", policy_type:"LIFE", region:"Πελοπόννησος",  claim_amount:128359.31, status:"REJECTED"},
+  {rank:5,  claim_id:"CLM0062", policy_type:"LIFE", region:"Μακεδονία",     claim_amount:127230.37, status:"APPROVED"},
+  {rank:6,  claim_id:"CLM0082", policy_type:"LIFE", region:"Θεσσαλονίκη",  claim_amount:107020.33, status:"REJECTED"},
+  {rank:7,  claim_id:"CLM0126", policy_type:"LIFE", region:"Μακεδονία",     claim_amount:103981.88, status:"APPROVED"},
+  {rank:8,  claim_id:"CLM0052", policy_type:"LIFE", region:"Θεσσαλονίκη",  claim_amount:99480.37,  status:"APPROVED"},
+  {rank:9,  claim_id:"CLM0196", policy_type:"LIFE", region:"Πελοπόννησος",  claim_amount:98584.87,  status:"APPROVED"},
+  {rank:10, claim_id:"CLM0152", policy_type:"LIFE", region:"Μακεδονία",     claim_amount:93692.49,  status:"APPROVED"}
+];
+
+const q5 = [
+  {month:"2022-01",monthly_amount:99659,cumulative_amount:99659},{month:"2022-02",monthly_amount:77278,cumulative_amount:176937},
+  {month:"2022-03",monthly_amount:171847,cumulative_amount:348784},{month:"2022-04",monthly_amount:120075,cumulative_amount:468859},
+  {month:"2022-05",monthly_amount:15173,cumulative_amount:484032},{month:"2022-06",monthly_amount:184731,cumulative_amount:668763},
+  {month:"2022-07",monthly_amount:133867,cumulative_amount:802630},{month:"2022-08",monthly_amount:37368,cumulative_amount:839998},
+  {month:"2022-09",monthly_amount:99002,cumulative_amount:939000},{month:"2022-10",monthly_amount:152865,cumulative_amount:1091865},
+  {month:"2022-11",monthly_amount:64816,cumulative_amount:1156680},{month:"2022-12",monthly_amount:268643,cumulative_amount:1425323},
+  {month:"2023-01",monthly_amount:74662,cumulative_amount:1499985},{month:"2023-02",monthly_amount:62077,cumulative_amount:1562062},
+  {month:"2023-03",monthly_amount:159030,cumulative_amount:1721092},{month:"2023-04",monthly_amount:89017,cumulative_amount:1810109},
+  {month:"2023-05",monthly_amount:188357,cumulative_amount:1998466},{month:"2023-06",monthly_amount:106218,cumulative_amount:2104684},
+  {month:"2023-07",monthly_amount:295753,cumulative_amount:2400437},{month:"2023-08",monthly_amount:125006,cumulative_amount:2525443},
+  {month:"2023-09",monthly_amount:66372,cumulative_amount:2591814},{month:"2023-10",monthly_amount:83284,cumulative_amount:2675098},
+  {month:"2023-11",monthly_amount:91589,cumulative_amount:2766687},{month:"2023-12",monthly_amount:74152,cumulative_amount:2840839},
+  {month:"2024-01",monthly_amount:122472,cumulative_amount:2963311},{month:"2024-02",monthly_amount:203684,cumulative_amount:3166995},
+  {month:"2024-03",monthly_amount:60885,cumulative_amount:3227880},{month:"2024-04",monthly_amount:129123,cumulative_amount:3357003},
+  {month:"2024-05",monthly_amount:120340,cumulative_amount:3477344},{month:"2024-06",monthly_amount:17634,cumulative_amount:3494978},
+  {month:"2024-07",monthly_amount:304972,cumulative_amount:3799949},{month:"2024-08",monthly_amount:43599,cumulative_amount:3843548},
+  {month:"2024-09",monthly_amount:79682,cumulative_amount:3923230},{month:"2024-10",monthly_amount:130428,cumulative_amount:4053659},
+  {month:"2024-11",monthly_amount:115121,cumulative_amount:4168779},{month:"2024-12",monthly_amount:169866,cumulative_amount:4338645}
+];
+
+// ── Chart defaults ──────────────────────────────────────
+Chart.defaults.color = '#8891b4';
+Chart.defaults.borderColor = '#2e3354';
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+const fmt = v => v >= 1e6
+  ? '€' + (v/1e6).toFixed(2) + 'M'
+  : v >= 1e3
+  ? '€' + (v/1e3).toFixed(0) + 'K'
+  : '€' + v.toLocaleString();
+
+// ── Q1: Horizontal Bar — Exposure ──────────────────────
+new Chart(document.getElementById('chartExposure'), {
+  type: 'bar',
+  data: {
+    labels: q1.map(d => d.policy_type),
+    datasets: [{
+      label: 'Συνολική Έκθεση',
+      data: q1.map(d => d.total_exposure),
+      backgroundColor: ['#6c8ef5cc','#5dd6b5cc','#f5a623cc','#a78bf5cc','#e05c5ccc'],
+      borderRadius: 6,
+    },{
+      label: 'Αξιώσεις (count)',
+      data: q1.map(d => d.total_claims * 5000),
+      backgroundColor: 'transparent',
+      hidden: true,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const d = q1[ctx.dataIndex];
+            return [`  Έκθεση: ${fmt(d.total_exposure)}`, `  Αξιώσεις: ${d.total_claims}`, `  Μέσο: ${fmt(d.avg_claim)}`];
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { callback: v => fmt(v) },
+        grid: { color: '#2e335440' }
+      },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+// ── Q2: Bar — Approval Rates ────────────────────────────
+const approvalColors = q2.map(d =>
+  d.approval_rate_pct >= 65 ? '#4caf8ccc'
+  : d.approval_rate_pct >= 55 ? '#f5a623cc'
+  : '#e05c5ccc'
+);
+new Chart(document.getElementById('chartApproval'), {
+  type: 'bar',
+  data: {
+    labels: q2.map(d => d.policy_type),
+    datasets: [{
+      label: 'Approval Rate %',
+      data: q2.map(d => d.approval_rate_pct),
+      backgroundColor: approvalColors,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => `  ${ctx.raw}% approval rate`
+        }
+      }
+    },
+    scales: {
+      y: {
+        min: 0, max: 100,
+        ticks: { callback: v => v + '%' },
+        grid: { color: '#2e335440' }
+      },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ── Q3: Risk Tier rows ──────────────────────────────────
+const tierColors = { LOW:'#4caf8c', MEDIUM:'#f5a623', HIGH:'#e88640', CRITICAL:'#e05c5c' };
+const maxClaims = Math.max(...q3.map(d => d.claims));
+const tierHtml = q3.map(d => `
+  <div class="tier-row">
+    <div class="tier-name"><span class="pill ${d.risk_tier.toLowerCase()}">${d.risk_tier}</span></div>
+    <div class="tier-bar-wrap">
+      <div class="tier-bar-bg">
+        <div class="tier-bar-fill" style="width:${(d.claims/maxClaims*100).toFixed(0)}%;background:${tierColors[d.risk_tier]}"></div>
+      </div>
+    </div>
+    <div class="tier-stats">${d.claims} κλ. · ${fmt(d.avg_amount)}</div>
+  </div>
+`).join('');
+document.getElementById('tierRows').innerHTML = tierHtml;
+
+// ── Q3: Doughnut — Settlement % ─────────────────────────
+new Chart(document.getElementById('chartRisk'), {
+  type: 'bar',
+  data: {
+    labels: q3.map(d => d.risk_tier),
+    datasets: [{
+      label: 'Settlement %',
+      data: q3.map(d => d.avg_settlement_pct),
+      backgroundColor: q3.map(d => tierColors[d.risk_tier] + 'cc'),
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => `  ${ctx.raw}% avg settlement` } }
+    },
+    scales: {
+      y: {
+        min: 65, max: 80,
+        ticks: { callback: v => v + '%' },
+        grid: { color: '#2e335440' }
+      },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// ── Q4: Top 10 Table ────────────────────────────────────
+const rankBadge = r => {
+  const cls = r === 1 ? 'gold' : r === 2 ? 'silver' : r === 3 ? 'bronze' : '';
+  return `<span class="rank-badge ${cls}">${r}</span>`;
+};
+const statusPill = s => `<span class="pill ${s.toLowerCase()}">${s}</span>`;
+
+document.getElementById('top10Body').innerHTML = q4.map(d => `
+  <tr>
+    <td>${rankBadge(d.rank)}</td>
+    <td style="font-family:monospace;font-size:0.8rem">${d.claim_id}</td>
+    <td>${d.policy_type}</td>
+    <td>${d.region}</td>
+    <td style="text-align:right;font-weight:600">${fmt(d.claim_amount)}</td>
+    <td>${statusPill(d.status)}</td>
+  </tr>
+`).join('');
+
+// ── Q5: Timeline ────────────────────────────────────────
+new Chart(document.getElementById('chartTimeline'), {
+  type: 'bar',
+  data: {
+    labels: q5.map(d => d.month),
+    datasets: [
+      {
+        label: 'Μηνιαίο Ποσό',
+        data: q5.map(d => d.monthly_amount),
+        backgroundColor: '#6c8ef540',
+        borderColor: '#6c8ef5',
+        borderWidth: 1,
+        borderRadius: 3,
+        yAxisID: 'y',
+      },
+      {
+        label: 'Αθροιστικό Σύνολο',
+        data: q5.map(d => d.cumulative_amount),
+        type: 'line',
+        borderColor: '#5dd6b5',
+        backgroundColor: '#5dd6b510',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 2.5,
+        yAxisID: 'y2',
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { boxWidth: 12, padding: 16 }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => `  ${ctx.dataset.label}: ${fmt(ctx.raw)}`
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          maxTicksLimit: 18,
+          maxRotation: 45,
+          font: { size: 10 }
+        },
+        grid: { color: '#2e335430' }
+      },
+      y: {
+        ticks: { callback: v => fmt(v) },
+        grid: { color: '#2e335430' },
+        position: 'left',
+      },
+      y2: {
+        ticks: { callback: v => fmt(v) },
+        grid: { display: false },
+        position: 'right',
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
