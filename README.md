@@ -108,4 +108,3 @@ python src/06_run_queries.py
 
 ---
 
-*Built as a guided portfolio project — Python · SQL · Data Engineering*
