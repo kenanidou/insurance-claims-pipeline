@@ -1,10 +1,10 @@
-# 🏥 Insurance Claims — End-to-End Data Pipeline
+# Insurance Claims — End-to-End Data Pipeline
 
 A portfolio project demonstrating a complete data engineering pipeline: from synthetic data generation to a SQL analytics layer and an interactive HTML dashboard.
 
 ---
 
-## 📌 Overview
+## Overview
 
 This pipeline processes 200 synthetic insurance claims through 6 sequential steps — ingestion, cleaning, validation, star-schema loading, SQL queries with window functions, and a browser-based dashboard.
 
@@ -12,7 +12,7 @@ This pipeline processes 200 synthetic insurance claims through 6 sequential step
 
 ---
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 insurance_pipeline/
@@ -33,7 +33,7 @@ insurance_pipeline/
 
 ---
 
-## ⚙️ Pipeline Steps
+## Pipeline Steps
 
 | Step | Script | Description |
 |------|--------|-------------|
@@ -47,7 +47,7 @@ insurance_pipeline/
 
 ---
 
-## 🗃️ Star Schema
+## Star Schema
 
 ```
 dim_policy_types ──┐
@@ -74,7 +74,7 @@ dim_customers    ──┘
 
 ---
 
-## 🚀 How to Run
+## How to Run
 
 ```bash
 # 1. Install dependencies
@@ -98,7 +98,7 @@ python src/06_run_queries.py
 
 ---
 
-## 📈 Key Findings
+## Key Findings
 
 - **LIFE** insurance: highest avg claim (€89,140) but lowest volume (22 claims)
 - **AUTO** insurance: most frequent (78 claims) with avg €8,562
@@ -106,5 +106,15 @@ python src/06_run_queries.py
 - Total portfolio exposure 2022–2024: **€4.34M**
 - All Top 10 largest claims belong to LIFE policy type
 
----
+## Skills Gained
+
+- **End-to-end pipeline design:** structuring a modular ETL pipeline in Python (generate → ingest → clean → load → query → visualise), with central configuration and reusable helpers
+- **Data ingestion:** loading CSV data, validating the schema and casting data types with pandas
+- **Data cleaning & validation:** removing duplicates, fixing negative values, handling nulls and enforcing business rules on deliberately dirty data
+- **Dimensional modelling:** designing a star schema with a fact table and three dimension tables
+- **Feature engineering:** computing derived fields such as settlement ratio, days to settle and risk tiers
+- **Databases:** creating and loading a SQLite database with SQLAlchemy
+- **Analytical SQL:** JOINs, GROUP BY with aggregates, CASE WHEN, custom sorting and window functions (`ROW_NUMBER()`, running totals with `SUM() OVER`)
+- **Data visualisation:** building an interactive HTML dashboard with Chart.js
+- **Insight communication:** turning query results into business findings on exposure, claim volume and approval rates
 
